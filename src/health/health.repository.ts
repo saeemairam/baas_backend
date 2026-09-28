@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service.js';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class HealthRepository {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async ping(): Promise<boolean> {
     try {
-      await this.db.query('SELECT 1');
+      await this.dataSource.query('SELECT 1');
       return true;
     } catch {
       return false;
