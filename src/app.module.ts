@@ -1,16 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
+import { UsersModule } from './users/users.module.js';
 
 @Module({
   imports: [
-    // isGlobal: true = every module can read config without importing it again
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     HealthModule,
+    UsersModule,
+    AuthModule,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}
