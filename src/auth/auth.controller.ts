@@ -1,6 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
+import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 
 @ApiTags('Auth')
@@ -16,6 +17,18 @@ export class AuthController {
     return {
       message: 'User registered successfully',
       data: await this.authService.register(dto),
+    };
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Log in with phone and password' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid phone or password' })
+  async login(@Body() dto: LoginDto) {
+    return {
+      message: 'Login successful',
+      data: await this.authService.login(dto),
     };
   }
 }
