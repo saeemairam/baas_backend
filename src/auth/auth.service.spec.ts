@@ -1,15 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { UsersService } from '../users/users.service.js';
 import { AuthService } from './auth.service.js';
 
 describe('AuthService', () => {
   let service: AuthService;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService],
-    }).compile();
-
-    service = module.get<AuthService>(AuthService);
+  beforeEach(() => {
+    const fakeUsersService = { register: vi.fn() } as unknown as UsersService;
+    service = new AuthService(fakeUsersService);
   });
 
   it('should be defined', () => {

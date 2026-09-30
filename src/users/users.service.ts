@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import { CreateUserDto } from './dto/create_user.dto.js'; // new
 import { UsersRepository } from './users.repository.js';
 
 @Injectable()
@@ -11,37 +12,29 @@ export class UsersService {
     return this.usersRepository.findByPhone(phone);
   }
 
-  async register(input: {
-    phone: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }) {
-    // 1. Reject duplicate phone numbers
-    const existing = await this.usersRepository.findByPhone(input.phone);
+  async register(dto: CreateUserDto) {
+    // was: input: { phone: string; ... }
+    const existing = await this.usersRepository.findByPhone(dto.phone);
     if (existing) {
       throw new ConflictException('Phone already exists');
     }
 
-    // 2. Hash the password before storing it
-    const passwordHash = await bcrypt.hash(input.password, 10);
-
-    // 3. Save the user
+    const passwordHash = await bcrypt.hash(dto.password, 10);
     const id = randomUUID();
+
     await this.usersRepository.create({
       id,
-      phone: input.phone,
+      phone: dto.phone,
       passwordHash,
-      firstName: input.firstName,
-      lastName: input.lastName,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
     });
 
-    // 4. Return only safe fields, never the password hash
     return {
       id,
-      phone: input.phone,
-      firstName: input.firstName,
-      lastName: input.lastName,
+      phone: dto.phone,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
     };
   }
 }
