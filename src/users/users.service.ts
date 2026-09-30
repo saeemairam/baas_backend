@@ -1,7 +1,11 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { CreateUserDto } from './dto/create_user.dto.js'; // new
+import { CreateUserDto } from './dto/create_user.dto.js';
 import { UsersRepository } from './users.repository.js';
 
 @Injectable()
@@ -13,7 +17,6 @@ export class UsersService {
   }
 
   async register(dto: CreateUserDto) {
-    // was: input: { phone: string; ... }
     const existing = await this.usersRepository.findByPhone(dto.phone);
     if (existing) {
       throw new ConflictException('Phone already exists');
@@ -35,6 +38,27 @@ export class UsersService {
       phone: dto.phone,
       firstName: dto.firstName,
       lastName: dto.lastName,
+    };
+  }
+
+  // new method
+  async validateUser(phone: string, password: string) {
+    const user = await this.usersRepository.findByPhone(phone);
+    if (!user) {
+      throw new UnauthorizedException('Invalid phone or password');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid phone or password');
+    }
+
+    // never return the hash, even internally past this point
+    return {
+      id: user.id,
+      phone: user.phone,
+      firstName: user.first_name,
+      lastName: user.last_name,
     };
   }
 }

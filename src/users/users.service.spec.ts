@@ -1,4 +1,5 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersRepository } from './users.repository.js';
 import { UsersService } from './users.service.js';
@@ -8,7 +9,6 @@ describe('UsersService', () => {
   let repo: { findByPhone: any; create: any };
 
   beforeEach(() => {
-    // a fake repository, so this test never touches the real database
     repo = {
       findByPhone: vi.fn(),
       create: vi.fn(),
@@ -44,5 +44,40 @@ describe('UsersService', () => {
     ).rejects.toThrow(ConflictException);
 
     expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  // new tests below
+  it('validateUser returns user data when password matches', async () => {
+    const passwordHash = await bcrypt.hash('StrongPassword123!', 10);
+    repo.findByPhone.mockResolvedValue({
+      id: 'user-1',
+      phone: '9999999999',
+      password_hash: passwordHash,
+      first_name: 'Test',
+      last_name: 'User',
+    });
+
+    const result = await service.validateUser(
+      '9999999999',
+      'StrongPassword123!',
+    );
+
+    expect(result.id).toBe('user-1');
+    expect(result.phone).toBe('9999999999');
+  });
+
+  it('validateUser throws UnauthorizedException when password is wrong', async () => {
+    const passwordHash = await bcrypt.hash('StrongPassword123!', 10);
+    repo.findByPhone.mockResolvedValue({
+      id: 'user-1',
+      phone: '9999999999',
+      password_hash: passwordHash,
+      first_name: 'Test',
+      last_name: 'User',
+    });
+
+    await expect(
+      service.validateUser('9999999999', 'WrongPassword'),
+    ).rejects.toThrow(UnauthorizedException);
   });
 });
