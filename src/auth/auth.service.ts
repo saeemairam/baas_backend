@@ -38,4 +38,8 @@ export class AuthService {
 
     return { accessToken, refreshToken, expiresIn: 900 };
   }
+
+  getProfile(userId: string) {
+    return this.usersService.getProfile(userId);
+  }
 }

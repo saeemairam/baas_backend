@@ -41,7 +41,6 @@ export class UsersService {
     };
   }
 
-  // new method
   async validateUser(phone: string, password: string) {
     const user = await this.usersRepository.findByPhone(phone);
     if (!user) {
@@ -53,7 +52,19 @@ export class UsersService {
       throw new UnauthorizedException('Invalid phone or password');
     }
 
-    // never return the hash, even internally past this point
+    return {
+      id: user.id,
+      phone: user.phone,
+      firstName: user.first_name,
+      lastName: user.last_name,
+    };
+  }
+
+  async getProfile(id: string) {
+    const user = await this.usersRepository.findById(id);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
     return {
       id: user.id,
       phone: user.phone,

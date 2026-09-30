@@ -14,6 +14,14 @@ export class UsersRepository {
     return rows[0] ?? null;
   }
 
+  async findById(id: string): Promise<User | null> {
+    const rows = await this.db.query<User[]>(
+      'SELECT * FROM users WHERE id = ? LIMIT 1',
+      [id],
+    );
+    return rows[0] ?? null;
+  }
+
   async create(user: {
     id: string;
     phone: string;

@@ -1,5 +1,19 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -29,6 +43,19 @@ export class AuthController {
     return {
       message: 'Login successful',
       data: await this.authService.login(dto),
+    };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get the current logged-in user' })
+  @ApiResponse({ status: 200, description: 'Current user profile' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid token' })
+  async getMe(@Req() req: any) {
+    return {
+      message: 'Current user profile',
+      data: await this.authService.getProfile(req.user.sub),
     };
   }
 }
