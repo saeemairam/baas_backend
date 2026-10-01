@@ -59,6 +59,24 @@ export class AuthController {
     };
   }
 
+  @Post('logout')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Log out the current session',
+    description:
+      'Requires a valid access token. Note: this does not yet revoke the token server-side — the client should discard its stored tokens.',
+  })
+  @ApiResponse({ status: 200, description: 'Logged out' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid token' })
+  async logout() {
+    return {
+      message: 'Logged out',
+      data: this.authService.logout(),
+    };
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -55,7 +55,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
-    // Confirm the user still exists before issuing a new access token
     const user = await this.usersService.getProfile(payload.sub);
 
     const accessToken = await this.jwtService.signAsync(
@@ -67,5 +66,11 @@ export class AuthService {
     );
 
     return { accessToken, expiresIn: 900 };
+  }
+
+  // Stub: does not yet revoke the token server-side (no blocklist/storage built yet).
+  // The client is expected to discard its tokens. Real revocation can be added later.
+  logout() {
+    return { message: 'Logged out' };
   }
 }
