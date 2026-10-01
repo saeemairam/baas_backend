@@ -40,4 +40,33 @@ export class ProjectsRepository {
       [project.id, project.name, project.slug, project.ownerId],
     );
   }
+
+  async update(
+    id: string,
+    changes: { name?: string; slug?: string },
+  ): Promise<void> {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    if (changes.name !== undefined) {
+      fields.push('name = ?');
+      values.push(changes.name);
+    }
+    if (changes.slug !== undefined) {
+      fields.push('slug = ?');
+      values.push(changes.slug);
+    }
+
+    if (fields.length === 0) return;
+
+    values.push(id);
+    await this.db.query(
+      `UPDATE projects SET ${fields.join(', ')} WHERE id = ?`,
+      values,
+    );
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db.query('DELETE FROM projects WHERE id = ?', [id]);
+  }
 }
