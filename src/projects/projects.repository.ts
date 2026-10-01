@@ -2,13 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import type { Project } from './entities/project.entity.js';
 
+const SELECT_COLUMNS = `
+  id,
+  name,
+  slug,
+  owner_id AS ownerId,
+  status,
+  created_at AS createdAt,
+  updated_at AS updatedAt
+`;
+
 @Injectable()
 export class ProjectsRepository {
   constructor(private readonly db: DatabaseService) {}
 
   async findBySlug(slug: string): Promise<Project | null> {
     const rows = await this.db.query<Project[]>(
-      'SELECT * FROM projects WHERE slug = ? LIMIT 1',
+      `SELECT ${SELECT_COLUMNS} FROM projects WHERE slug = ? LIMIT 1`,
       [slug],
     );
     return rows[0] ?? null;
@@ -16,7 +26,7 @@ export class ProjectsRepository {
 
   async findById(id: string): Promise<Project | null> {
     const rows = await this.db.query<Project[]>(
-      'SELECT * FROM projects WHERE id = ? LIMIT 1',
+      `SELECT ${SELECT_COLUMNS} FROM projects WHERE id = ? LIMIT 1`,
       [id],
     );
     return rows[0] ?? null;
@@ -24,7 +34,7 @@ export class ProjectsRepository {
 
   async findAllByOwner(ownerId: string): Promise<Project[]> {
     return this.db.query<Project[]>(
-      'SELECT * FROM projects WHERE owner_id = ? ORDER BY created_at DESC',
+      `SELECT ${SELECT_COLUMNS} FROM projects WHERE owner_id = ? ORDER BY created_at DESC`,
       [ownerId],
     );
   }
