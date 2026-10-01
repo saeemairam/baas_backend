@@ -16,6 +16,7 @@ import {
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RefreshDto } from './dto/refresh.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 
 @ApiTags('Auth')
@@ -43,6 +44,18 @@ export class AuthController {
     return {
       message: 'Login successful',
       data: await this.authService.login(dto),
+    };
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Get a new access token using a refresh token' })
+  @ApiResponse({ status: 200, description: 'New access token issued' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  async refresh(@Body() dto: RefreshDto) {
+    return {
+      message: 'Access token refreshed',
+      data: await this.authService.refresh(dto),
     };
   }
 

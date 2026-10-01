@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RefreshDto } from './dto/refresh.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 
 @Injectable()
@@ -41,5 +42,30 @@ export class AuthService {
 
   getProfile(userId: string) {
     return this.usersService.getProfile(userId);
+  }
+
+  async refresh(dto: RefreshDto) {
+    let payload: { sub: string };
+
+    try {
+      payload = await this.jwtService.verifyAsync(dto.refreshToken, {
+        secret: this.config.get('JWT_REFRESH_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // Confirm the user still exists before issuing a new access token
+    const user = await this.usersService.getProfile(payload.sub);
+
+    const accessToken = await this.jwtService.signAsync(
+      { sub: user.id, phone: user.phone },
+      {
+        secret: this.config.get('JWT_ACCESS_SECRET'),
+        expiresIn: this.config.get('JWT_ACCESS_EXPIRES_IN'),
+      },
+    );
+
+    return { accessToken, expiresIn: 900 };
   }
 }
