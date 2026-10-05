@@ -90,4 +90,5 @@ describe('ProjectsController', () => {
       data: null,
     });
   });
+  k;
 });
