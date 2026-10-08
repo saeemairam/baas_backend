@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { ProjectMembersRepository } from '../project-members/project-members.repository.js';
 import { RolesService } from '../roles/roles.service.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
@@ -15,6 +16,7 @@ export class ProjectsService {
   constructor(
     private readonly projectsRepository: ProjectsRepository,
     private readonly rolesService: RolesService,
+    private readonly projectMembersRepository: ProjectMembersRepository,
   ) {}
 
   async create(ownerId: string, dto: CreateProjectDto) {
@@ -33,7 +35,15 @@ export class ProjectsService {
       ownerId,
     });
 
-    await this.rolesService.createDefaultRoles(id);
+    const roleIds = await this.rolesService.createDefaultRoles(id);
+
+    await this.projectMembersRepository.create({
+      id: randomUUID(),
+      projectId: id,
+      userId: ownerId,
+      role: 'owner',
+      roleId: roleIds['owner'],
+    });
 
     return this.projectsRepository.findById(id);
   }

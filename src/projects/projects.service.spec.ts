@@ -13,6 +13,9 @@ describe('ProjectsService', () => {
   let fakeRolesService: {
     createDefaultRoles: ReturnType<typeof vi.fn>;
   };
+  let fakeMembersRepository: {
+    create: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     fakeRepository = {
@@ -24,9 +27,13 @@ describe('ProjectsService', () => {
     fakeRolesService = {
       createDefaultRoles: vi.fn(),
     };
+    fakeMembersRepository = {
+      create: vi.fn(),
+    };
     service = new ProjectsService(
       fakeRepository as any,
       fakeRolesService as any,
+      fakeMembersRepository as any,
     );
   });
 
@@ -34,7 +41,10 @@ describe('ProjectsService', () => {
     it('creates a project with an auto-generated slug when none is given', async () => {
       fakeRepository.findBySlug.mockResolvedValue(null);
       fakeRepository.create.mockResolvedValue(undefined);
-      fakeRolesService.createDefaultRoles.mockResolvedValue({});
+      fakeRolesService.createDefaultRoles.mockResolvedValue({
+        owner: 'owner-role-id',
+      });
+      fakeMembersRepository.create.mockResolvedValue(undefined);
       fakeRepository.findById.mockResolvedValue({
         id: 'some-id',
         name: 'My First Project',
@@ -60,6 +70,13 @@ describe('ProjectsService', () => {
       expect(fakeRolesService.createDefaultRoles).toHaveBeenCalledWith(
         expect.any(String),
       );
+      expect(fakeMembersRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'owner-1',
+          role: 'owner',
+          roleId: 'owner-role-id',
+        }),
+      );
       expect(result).toEqual(
         expect.objectContaining({ slug: 'my-first-project' }),
       );
@@ -77,12 +94,16 @@ describe('ProjectsService', () => {
 
       expect(fakeRepository.create).not.toHaveBeenCalled();
       expect(fakeRolesService.createDefaultRoles).not.toHaveBeenCalled();
+      expect(fakeMembersRepository.create).not.toHaveBeenCalled();
     });
 
     it('uses the explicitly given slug instead of generating one', async () => {
       fakeRepository.findBySlug.mockResolvedValue(null);
       fakeRepository.create.mockResolvedValue(undefined);
-      fakeRolesService.createDefaultRoles.mockResolvedValue({});
+      fakeRolesService.createDefaultRoles.mockResolvedValue({
+        owner: 'owner-role-id',
+      });
+      fakeMembersRepository.create.mockResolvedValue(undefined);
       fakeRepository.findById.mockResolvedValue({
         id: 'some-id',
         slug: 'custom-slug',
