@@ -1,0 +1,55 @@
+export const DEFAULT_ROLES = [
+  {
+    name: 'owner',
+    description: 'Full access to the project',
+    permissions: [
+      'projects:read',
+      'projects:update',
+      'projects:delete',
+      'members:read',
+      'members:create',
+      'members:delete',
+      'users:read',
+      'users:update',
+      'records:read',
+      'records:create',
+      'records:update',
+      'records:delete',
+    ],
+  },
+  {
+    name: 'admin',
+    description:
+      'Manage the project, members and records, but cannot delete the project',
+    permissions: [
+      'projects:read',
+      'projects:update',
+      'members:read',
+      'members:create',
+      'members:delete',
+      'users:read',
+      'users:update',
+      'records:read',
+      'records:create',
+      'records:update',
+      'records:delete',
+    ],
+  },
+  {
+    name: 'developer',
+    description: 'Read the project and manage records',
+    permissions: [
+      'projects:read',
+      'members:read',
+      'records:read',
+      'records:create',
+      'records:update',
+      'records:delete',
+    ],
+  },
+  {
+    name: 'viewer',
+    description: 'Read-only access',
+    permissions: ['projects:read', 'members:read', 'records:read'],
+  },
+];
