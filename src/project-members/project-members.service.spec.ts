@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProjectMembersService } from './project-members.service.js';
 
@@ -11,15 +15,11 @@ describe('ProjectMembersService', () => {
     updateRole: ReturnType<typeof vi.fn>;
     delete: ReturnType<typeof vi.fn>;
   };
-  let fakeProjectsService: {
-    findOneForOwner: ReturnType<typeof vi.fn>;
-  };
   let fakeRolesService: {
     findByName: ReturnType<typeof vi.fn>;
   };
 
   const projectId = 'project-1';
-  const ownerId = 'owner-1';
   const newUserId = 'user-2';
 
   beforeEach(() => {
@@ -30,9 +30,6 @@ describe('ProjectMembersService', () => {
       updateRole: vi.fn(),
       delete: vi.fn(),
     };
-    fakeProjectsService = {
-      findOneForOwner: vi.fn().mockResolvedValue({ id: projectId, ownerId }),
-    };
     fakeRolesService = {
       findByName: vi
         .fn()
@@ -40,13 +37,12 @@ describe('ProjectMembersService', () => {
     };
     service = new ProjectMembersService(
       fakeRepository as any,
-      fakeProjectsService as any,
       fakeRolesService as any,
     );
   });
 
   describe('addMember', () => {
-    it('checks ownership, then adds a new member with the role id', async () => {
+    it('adds a new member with the role id', async () => {
       fakeRepository.findByProjectAndUser
         .mockResolvedValueOnce(null) // duplicate check
         .mockResolvedValueOnce({
@@ -57,15 +53,11 @@ describe('ProjectMembersService', () => {
           roleId: 'role-dev',
         }); // return value
 
-      const result = await service.addMember(projectId, ownerId, {
+      const result = await service.addMember(projectId, {
         userId: newUserId,
         role: 'developer',
       });
 
-      expect(fakeProjectsService.findOneForOwner).toHaveBeenCalledWith(
-        projectId,
-        ownerId,
-      );
       expect(fakeRolesService.findByName).toHaveBeenCalledWith(
         projectId,
         'developer',
@@ -91,7 +83,7 @@ describe('ProjectMembersService', () => {
       });
 
       await expect(
-        service.addMember(projectId, ownerId, {
+        service.addMember(projectId, {
           userId: newUserId,
           role: 'developer',
         }),
@@ -107,7 +99,7 @@ describe('ProjectMembersService', () => {
       );
 
       await expect(
-        service.addMember(projectId, ownerId, {
+        service.addMember(projectId, {
           userId: newUserId,
           role: 'developer',
         }),
@@ -115,47 +107,30 @@ describe('ProjectMembersService', () => {
 
       expect(fakeRepository.create).not.toHaveBeenCalled();
     });
-
-    it('propagates the ownership check failure from ProjectsService', async () => {
-      fakeProjectsService.findOneForOwner.mockRejectedValueOnce(
-        new Error('Forbidden'),
-      );
-
-      await expect(
-        service.addMember(projectId, ownerId, {
-          userId: newUserId,
-          role: 'developer',
-        }),
-      ).rejects.toThrow('Forbidden');
-
-      expect(fakeRepository.findByProjectAndUser).not.toHaveBeenCalled();
-    });
   });
 
   describe('listMembers', () => {
-    it('checks ownership, then returns the member list', async () => {
+    it('returns the member list for the project', async () => {
       const members = [{ id: 'm1', projectId, userId: newUserId }];
       fakeRepository.findAllByProject.mockResolvedValue(members);
 
-      const result = await service.listMembers(projectId, ownerId);
+      const result = await service.listMembers(projectId);
 
-      expect(fakeProjectsService.findOneForOwner).toHaveBeenCalledWith(
-        projectId,
-        ownerId,
-      );
+      expect(fakeRepository.findAllByProject).toHaveBeenCalledWith(projectId);
       expect(result).toEqual(members);
     });
   });
 
   describe('removeMember', () => {
-    it('checks ownership, then removes an existing member', async () => {
+    it('removes an existing member', async () => {
       fakeRepository.findByProjectAndUser.mockResolvedValue({
         id: 'm1',
         projectId,
         userId: newUserId,
+        role: 'viewer',
       });
 
-      await service.removeMember(projectId, ownerId, newUserId);
+      await service.removeMember(projectId, newUserId);
 
       expect(fakeRepository.delete).toHaveBeenCalledWith(projectId, newUserId);
     });
@@ -163,9 +138,24 @@ describe('ProjectMembersService', () => {
     it('throws NotFoundException when the member does not exist', async () => {
       fakeRepository.findByProjectAndUser.mockResolvedValue(null);
 
-      await expect(
-        service.removeMember(projectId, ownerId, newUserId),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeMember(projectId, newUserId)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(fakeRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException when trying to remove the owner', async () => {
+      fakeRepository.findByProjectAndUser.mockResolvedValue({
+        id: 'm1',
+        projectId,
+        userId: 'owner-1',
+        role: 'owner',
+      });
+
+      await expect(service.removeMember(projectId, 'owner-1')).rejects.toThrow(
+        ForbiddenException,
+      );
 
       expect(fakeRepository.delete).not.toHaveBeenCalled();
     });

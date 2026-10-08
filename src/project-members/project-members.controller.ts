@@ -5,7 +5,6 @@ import {
   Get,
   Param,
   Post,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -32,16 +31,15 @@ export class ProjectMembersController {
   @ApiOperation({ summary: 'Add a member to a project' })
   @ApiResponse({ status: 201, description: 'Member added successfully' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
-  @ApiResponse({ status: 404, description: 'Project not found' })
+  @ApiResponse({ status: 404, description: 'Project or role not found' })
   @ApiResponse({ status: 409, description: 'User is already a member' })
   async addMember(
-    @Req() req: any,
     @Param('projectId') projectId: string,
     @Body() dto: AddMemberDto,
   ) {
     return {
       message: 'Member added successfully',
-      data: await this.membersService.addMember(projectId, req.user.sub, dto),
+      data: await this.membersService.addMember(projectId, dto),
     };
   }
 
@@ -50,11 +48,10 @@ export class ProjectMembersController {
   @ApiOperation({ summary: 'List members of a project' })
   @ApiResponse({ status: 200, description: 'Members retrieved successfully' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
-  @ApiResponse({ status: 404, description: 'Project not found' })
-  async listMembers(@Req() req: any, @Param('projectId') projectId: string) {
+  async listMembers(@Param('projectId') projectId: string) {
     return {
       message: 'Members retrieved successfully',
-      data: await this.membersService.listMembers(projectId, req.user.sub),
+      data: await this.membersService.listMembers(projectId),
     };
   }
 
@@ -63,13 +60,12 @@ export class ProjectMembersController {
   @ApiOperation({ summary: 'Remove a member from a project' })
   @ApiResponse({ status: 200, description: 'Member removed successfully' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
-  @ApiResponse({ status: 404, description: 'Project or member not found' })
+  @ApiResponse({ status: 404, description: 'Member not found' })
   async removeMember(
-    @Req() req: any,
     @Param('projectId') projectId: string,
     @Param('userId') userId: string,
   ) {
-    await this.membersService.removeMember(projectId, req.user.sub, userId);
+    await this.membersService.removeMember(projectId, userId);
     return { message: 'Member removed successfully', data: null };
   }
 }

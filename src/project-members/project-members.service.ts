@@ -1,10 +1,10 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { ProjectsService } from '../projects/projects.service.js';
 import { RolesService } from '../roles/roles.service.js';
 import { AddMemberDto } from './dto/add-member.dto.js';
 import { ProjectMembersRepository } from './project-members.repository.js';
@@ -13,22 +13,10 @@ import { ProjectMembersRepository } from './project-members.repository.js';
 export class ProjectMembersService {
   constructor(
     private readonly membersRepository: ProjectMembersRepository,
-    private readonly projectsService: ProjectsService,
     private readonly rolesService: RolesService,
   ) {}
 
-  // only the project owner can manage members, for now
-  private async assertIsOwner(projectId: string, userId: string) {
-    const project = await this.projectsService.findOneForOwner(
-      projectId,
-      userId,
-    );
-    return project;
-  }
-
-  async addMember(projectId: string, ownerId: string, dto: AddMemberDto) {
-    await this.assertIsOwner(projectId, ownerId);
-
+  async addMember(projectId: string, dto: AddMemberDto) {
     const existing = await this.membersRepository.findByProjectAndUser(
       projectId,
       dto.userId,
@@ -51,20 +39,20 @@ export class ProjectMembersService {
     return this.membersRepository.findByProjectAndUser(projectId, dto.userId);
   }
 
-  async listMembers(projectId: string, ownerId: string) {
-    await this.assertIsOwner(projectId, ownerId);
+  listMembers(projectId: string) {
     return this.membersRepository.findAllByProject(projectId);
   }
 
-  async removeMember(projectId: string, ownerId: string, memberUserId: string) {
-    await this.assertIsOwner(projectId, ownerId);
-
+  async removeMember(projectId: string, memberUserId: string) {
     const existing = await this.membersRepository.findByProjectAndUser(
       projectId,
       memberUserId,
     );
     if (!existing) {
       throw new NotFoundException('Member not found');
+    }
+    if (existing.role === 'owner') {
+      throw new ForbiddenException('The project owner cannot be removed');
     }
 
     await this.membersRepository.delete(projectId, memberUserId);
