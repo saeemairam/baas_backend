@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
+import type { Permission } from './entities/permission.entity.js';
 import type { Role } from './entities/role.entity.js';
 
 const SELECT_COLUMNS = `
@@ -46,6 +47,31 @@ export class RolesRepository {
     await this.db.query(
       'INSERT INTO roles (id, project_id, name, description) VALUES (?, ?, ?, ?)',
       [role.id, role.projectId, role.name, role.description ?? null],
+    );
+  }
+
+  async findPermissionsByNames(names: string[]): Promise<Permission[]> {
+    if (names.length === 0) return [];
+    const placeholders = names.map(() => '?').join(', ');
+    return this.db.query<Permission[]>(
+      `SELECT id, name, resource, action FROM permissions WHERE name IN (${placeholders})`,
+      names,
+    );
+  }
+
+  async assignPermissions(
+    roleId: string,
+    permissionIds: string[],
+  ): Promise<void> {
+    if (permissionIds.length === 0) return;
+    const placeholders = permissionIds.map(() => '(?, ?)').join(', ');
+    const values = permissionIds.flatMap((permissionId) => [
+      roleId,
+      permissionId,
+    ]);
+    await this.db.query(
+      `INSERT INTO role_permissions (role_id, permission_id) VALUES ${placeholders}`,
+      values,
     );
   }
 }
