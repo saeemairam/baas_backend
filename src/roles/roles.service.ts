@@ -20,6 +20,14 @@ export class RolesService {
     return role;
   }
 
+  async findByName(projectId: string, name: string): Promise<Role> {
+    const role = await this.rolesRepository.findByName(projectId, name);
+    if (!role) {
+      throw new NotFoundException('Role not found in this project');
+    }
+    return role;
+  }
+
   getUserPermissions(projectId: string, userId: string): Promise<string[]> {
     return this.rolesRepository.findPermissionNamesForUser(projectId, userId);
   }
