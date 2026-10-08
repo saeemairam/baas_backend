@@ -51,8 +51,12 @@ export class ProjectMembersService {
     if (!existing) {
       throw new NotFoundException('Member not found');
     }
-    if (existing.role === 'owner') {
-      throw new ForbiddenException('The project owner cannot be removed');
+
+    if (existing.roleId) {
+      const role = await this.rolesService.findOne(projectId, existing.roleId);
+      if (role.name === 'owner') {
+        throw new ForbiddenException('The project owner cannot be removed');
+      }
     }
 
     await this.membersRepository.delete(projectId, memberUserId);

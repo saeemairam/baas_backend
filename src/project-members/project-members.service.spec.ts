@@ -17,6 +17,7 @@ describe('ProjectMembersService', () => {
   };
   let fakeRolesService: {
     findByName: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
   };
 
   const projectId = 'project-1';
@@ -34,6 +35,7 @@ describe('ProjectMembersService', () => {
       findByName: vi
         .fn()
         .mockResolvedValue({ id: 'role-dev', name: 'developer', projectId }),
+      findOne: vi.fn(),
     };
     service = new ProjectMembersService(
       fakeRepository as any,
@@ -128,10 +130,20 @@ describe('ProjectMembersService', () => {
         projectId,
         userId: newUserId,
         role: 'viewer',
+        roleId: 'role-viewer',
+      });
+      fakeRolesService.findOne.mockResolvedValue({
+        id: 'role-viewer',
+        name: 'viewer',
+        projectId,
       });
 
       await service.removeMember(projectId, newUserId);
 
+      expect(fakeRolesService.findOne).toHaveBeenCalledWith(
+        projectId,
+        'role-viewer',
+      );
       expect(fakeRepository.delete).toHaveBeenCalledWith(projectId, newUserId);
     });
 
@@ -151,6 +163,12 @@ describe('ProjectMembersService', () => {
         projectId,
         userId: 'owner-1',
         role: 'owner',
+        roleId: 'role-owner',
+      });
+      fakeRolesService.findOne.mockResolvedValue({
+        id: 'role-owner',
+        name: 'owner',
+        projectId,
       });
 
       await expect(service.removeMember(projectId, 'owner-1')).rejects.toThrow(
