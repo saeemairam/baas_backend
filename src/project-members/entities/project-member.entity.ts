@@ -3,5 +3,6 @@ export interface ProjectMember {
   projectId: string;
   userId: string;
   role: string;
+  roleId: string | null;
   createdAt: Date;
 }
