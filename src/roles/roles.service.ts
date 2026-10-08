@@ -20,6 +20,10 @@ export class RolesService {
     return role;
   }
 
+  getUserPermissions(projectId: string, userId: string): Promise<string[]> {
+    return this.rolesRepository.findPermissionNamesForUser(projectId, userId);
+  }
+
   async createDefaultRoles(projectId: string): Promise<Record<string, string>> {
     const roleIds: Record<string, string> = {};
 
