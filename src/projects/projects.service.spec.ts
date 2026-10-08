@@ -10,6 +10,9 @@ describe('ProjectsService', () => {
     findAllByOwner: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
   };
+  let fakeRolesService: {
+    createDefaultRoles: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     fakeRepository = {
@@ -18,13 +21,20 @@ describe('ProjectsService', () => {
       findAllByOwner: vi.fn(),
       create: vi.fn(),
     };
-    service = new ProjectsService(fakeRepository as any);
+    fakeRolesService = {
+      createDefaultRoles: vi.fn(),
+    };
+    service = new ProjectsService(
+      fakeRepository as any,
+      fakeRolesService as any,
+    );
   });
 
   describe('create', () => {
     it('creates a project with an auto-generated slug when none is given', async () => {
       fakeRepository.findBySlug.mockResolvedValue(null);
       fakeRepository.create.mockResolvedValue(undefined);
+      fakeRolesService.createDefaultRoles.mockResolvedValue({});
       fakeRepository.findById.mockResolvedValue({
         id: 'some-id',
         name: 'My First Project',
@@ -47,6 +57,9 @@ describe('ProjectsService', () => {
           ownerId: 'owner-1',
         }),
       );
+      expect(fakeRolesService.createDefaultRoles).toHaveBeenCalledWith(
+        expect.any(String),
+      );
       expect(result).toEqual(
         expect.objectContaining({ slug: 'my-first-project' }),
       );
@@ -63,11 +76,13 @@ describe('ProjectsService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(fakeRepository.create).not.toHaveBeenCalled();
+      expect(fakeRolesService.createDefaultRoles).not.toHaveBeenCalled();
     });
 
     it('uses the explicitly given slug instead of generating one', async () => {
       fakeRepository.findBySlug.mockResolvedValue(null);
       fakeRepository.create.mockResolvedValue(undefined);
+      fakeRolesService.createDefaultRoles.mockResolvedValue({});
       fakeRepository.findById.mockResolvedValue({
         id: 'some-id',
         slug: 'custom-slug',

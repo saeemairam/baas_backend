@@ -5,13 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { RolesService } from '../roles/roles.service.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { ProjectsRepository } from './projects.repository.js';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly projectsRepository: ProjectsRepository) {}
+  constructor(
+    private readonly projectsRepository: ProjectsRepository,
+    private readonly rolesService: RolesService,
+  ) {}
 
   async create(ownerId: string, dto: CreateProjectDto) {
     const slug = dto.slug ?? this.slugify(dto.name);
@@ -28,6 +32,8 @@ export class ProjectsService {
       slug,
       ownerId,
     });
+
+    await this.rolesService.createDefaultRoles(id);
 
     return this.projectsRepository.findById(id);
   }
