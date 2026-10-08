@@ -74,4 +74,20 @@ export class RolesRepository {
       values,
     );
   }
+
+  async findPermissionNamesForUser(
+    projectId: string,
+    userId: string,
+  ): Promise<string[]> {
+    const rows = await this.db.query<{ name: string }[]>(
+      `SELECT p.name AS name
+       FROM project_members pm
+       JOIN roles r ON r.id = pm.role_id AND r.project_id = pm.project_id
+       JOIN role_permissions rp ON rp.role_id = r.id
+       JOIN permissions p ON p.id = rp.permission_id
+       WHERE pm.project_id = ? AND pm.user_id = ?`,
+      [projectId, userId],
+    );
+    return rows.map((row) => row.name);
+  }
 }
