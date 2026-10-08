@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ProjectsService } from '../projects/projects.service.js';
+import { RolesService } from '../roles/roles.service.js';
 import { AddMemberDto } from './dto/add-member.dto.js';
 import { ProjectMembersRepository } from './project-members.repository.js';
 
@@ -13,6 +14,7 @@ export class ProjectMembersService {
   constructor(
     private readonly membersRepository: ProjectMembersRepository,
     private readonly projectsService: ProjectsService,
+    private readonly rolesService: RolesService,
   ) {}
 
   // only the project owner can manage members, for now
@@ -35,12 +37,15 @@ export class ProjectMembersService {
       throw new ConflictException('User is already a member of this project');
     }
 
+    const role = await this.rolesService.findByName(projectId, dto.role);
+
     const id = randomUUID();
     await this.membersRepository.create({
       id,
       projectId,
       userId: dto.userId,
       role: dto.role,
+      roleId: role.id,
     });
 
     return this.membersRepository.findByProjectAndUser(projectId, dto.userId);

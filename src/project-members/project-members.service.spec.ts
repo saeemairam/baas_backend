@@ -14,6 +14,9 @@ describe('ProjectMembersService', () => {
   let fakeProjectsService: {
     findOneForOwner: ReturnType<typeof vi.fn>;
   };
+  let fakeRolesService: {
+    findByName: ReturnType<typeof vi.fn>;
+  };
 
   const projectId = 'project-1';
   const ownerId = 'owner-1';
@@ -30,14 +33,20 @@ describe('ProjectMembersService', () => {
     fakeProjectsService = {
       findOneForOwner: vi.fn().mockResolvedValue({ id: projectId, ownerId }),
     };
+    fakeRolesService = {
+      findByName: vi
+        .fn()
+        .mockResolvedValue({ id: 'role-dev', name: 'developer', projectId }),
+    };
     service = new ProjectMembersService(
       fakeRepository as any,
       fakeProjectsService as any,
+      fakeRolesService as any,
     );
   });
 
   describe('addMember', () => {
-    it('checks ownership, then adds a new member', async () => {
+    it('checks ownership, then adds a new member with the role id', async () => {
       fakeRepository.findByProjectAndUser
         .mockResolvedValueOnce(null) // duplicate check
         .mockResolvedValueOnce({
@@ -45,6 +54,7 @@ describe('ProjectMembersService', () => {
           projectId,
           userId: newUserId,
           role: 'developer',
+          roleId: 'role-dev',
         }); // return value
 
       const result = await service.addMember(projectId, ownerId, {
@@ -56,11 +66,16 @@ describe('ProjectMembersService', () => {
         projectId,
         ownerId,
       );
+      expect(fakeRolesService.findByName).toHaveBeenCalledWith(
+        projectId,
+        'developer',
+      );
       expect(fakeRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           projectId,
           userId: newUserId,
           role: 'developer',
+          roleId: 'role-dev',
         }),
       );
       expect(result).toEqual(
@@ -81,6 +96,22 @@ describe('ProjectMembersService', () => {
           role: 'developer',
         }),
       ).rejects.toThrow(ConflictException);
+
+      expect(fakeRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when the role does not exist in the project', async () => {
+      fakeRepository.findByProjectAndUser.mockResolvedValueOnce(null);
+      fakeRolesService.findByName.mockRejectedValueOnce(
+        new NotFoundException('Role not found in this project'),
+      );
+
+      await expect(
+        service.addMember(projectId, ownerId, {
+          userId: newUserId,
+          role: 'developer',
+        }),
+      ).rejects.toThrow(NotFoundException);
 
       expect(fakeRepository.create).not.toHaveBeenCalled();
     });
