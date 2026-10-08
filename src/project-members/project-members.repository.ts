@@ -7,6 +7,7 @@ const SELECT_COLUMNS = `
   project_id AS projectId,
   user_id AS userId,
   role,
+  role_id AS roleId,
   created_at AS createdAt
 `;
 
@@ -37,10 +38,17 @@ export class ProjectMembersRepository {
     projectId: string;
     userId: string;
     role: string;
+    roleId?: string;
   }): Promise<void> {
     await this.db.query(
-      'INSERT INTO project_members (id, project_id, user_id, role) VALUES (?, ?, ?, ?)',
-      [member.id, member.projectId, member.userId, member.role],
+      'INSERT INTO project_members (id, project_id, user_id, role, role_id) VALUES (?, ?, ?, ?, ?)',
+      [
+        member.id,
+        member.projectId,
+        member.userId,
+        member.role,
+        member.roleId ?? null,
+      ],
     );
   }
 
