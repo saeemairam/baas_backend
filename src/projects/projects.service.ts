@@ -41,7 +41,6 @@ export class ProjectsService {
       id: randomUUID(),
       projectId: id,
       userId: ownerId,
-      role: 'owner',
       roleId: roleIds['owner'],
     });
 

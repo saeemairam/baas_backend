@@ -73,7 +73,6 @@ describe('ProjectsService', () => {
       expect(fakeMembersRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'owner-1',
-          role: 'owner',
           roleId: 'owner-role-id',
         }),
       );

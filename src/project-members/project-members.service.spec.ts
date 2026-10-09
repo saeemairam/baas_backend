@@ -68,7 +68,6 @@ describe('ProjectMembersService', () => {
         expect.objectContaining({
           projectId,
           userId: newUserId,
-          role: 'developer',
           roleId: 'role-dev',
         }),
       );

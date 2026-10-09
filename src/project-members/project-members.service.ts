@@ -32,7 +32,6 @@ export class ProjectMembersService {
       id,
       projectId,
       userId: dto.userId,
-      role: dto.role,
       roleId: role.id,
     });
 
