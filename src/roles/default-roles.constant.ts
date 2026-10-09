@@ -15,6 +15,9 @@ export const DEFAULT_ROLES = [
       'records:create',
       'records:update',
       'records:delete',
+      'api_keys:read',
+      'api_keys:create',
+      'api_keys:delete',
     ],
   },
   {
@@ -33,6 +36,9 @@ export const DEFAULT_ROLES = [
       'records:create',
       'records:update',
       'records:delete',
+      'api_keys:read',
+      'api_keys:create',
+      'api_keys:delete',
     ],
   },
   {
@@ -45,6 +51,7 @@ export const DEFAULT_ROLES = [
       'records:create',
       'records:update',
       'records:delete',
+      'api_keys:read',
     ],
   },
   {

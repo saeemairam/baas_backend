@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ApiKeysModule } from './api-keys/api-keys.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -16,6 +17,7 @@ import { UsersModule } from './users/users.module.js';
     AuthModule,
     ProjectsModule,
     ProjectMembersModule,
+    ApiKeysModule,
   ],
   controllers: [],
   providers: [],
