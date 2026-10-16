@@ -11,6 +11,9 @@ export const DEFAULT_ROLES = [
       'members:delete',
       'users:read',
       'users:update',
+      'resources:read',
+      'resources:create',
+      'resources:delete',
       'records:read',
       'records:create',
       'records:update',
@@ -32,6 +35,9 @@ export const DEFAULT_ROLES = [
       'members:delete',
       'users:read',
       'users:update',
+      'resources:read',
+      'resources:create',
+      'resources:delete',
       'records:read',
       'records:create',
       'records:update',
@@ -47,6 +53,7 @@ export const DEFAULT_ROLES = [
     permissions: [
       'projects:read',
       'members:read',
+      'resources:read',
       'records:read',
       'records:create',
       'records:update',
@@ -57,6 +64,11 @@ export const DEFAULT_ROLES = [
   {
     name: 'viewer',
     description: 'Read-only access',
-    permissions: ['projects:read', 'members:read', 'records:read'],
+    permissions: [
+      'projects:read',
+      'members:read',
+      'resources:read',
+      'records:read',
+    ],
   },
 ];
