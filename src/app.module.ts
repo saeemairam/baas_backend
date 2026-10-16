@@ -7,6 +7,7 @@ import { HealthModule } from './health/health.module.js';
 import { ProjectMembersModule } from './project-members/project-members.module.js';
 import { ProjectsModule } from './projects/projects.module.js';
 import { UsersModule } from './users/users.module.js';
+import { ResourcesModule } from './resources/resources.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UsersModule } from './users/users.module.js';
     ProjectsModule,
     ProjectMembersModule,
     ApiKeysModule,
+    ResourcesModule,
   ],
   controllers: [],
   providers: [],
