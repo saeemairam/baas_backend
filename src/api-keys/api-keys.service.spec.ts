@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiKeysService } from './api-keys.service.js';
 import type { ApiKeysRepository } from './api-keys.repository.js';
@@ -59,11 +60,19 @@ describe('ApiKeysService', () => {
 
   describe('revoke', () => {
     it('revokes the key using the project id and key id', async () => {
-      repository.revoke.mockResolvedValue(undefined);
+      repository.revoke.mockResolvedValue(true);
 
       await service.revoke('project-1', 'key-1');
 
       expect(repository.revoke).toHaveBeenCalledWith('project-1', 'key-1');
+    });
+
+    it('throws NotFoundException when no key was revoked', async () => {
+      repository.revoke.mockResolvedValue(false);
+
+      await expect(service.revoke('project-1', 'missing-key')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

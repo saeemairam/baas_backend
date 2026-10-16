@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { ApiKeysRepository } from './api-keys.repository.js';
 import type { ApiKey } from './entities/api-key.entity.js';
@@ -30,8 +30,11 @@ export class ApiKeysService {
     return this.apiKeysRepository.findAllByProject(projectId);
   }
 
-  revoke(projectId: string, id: string): Promise<void> {
-    return this.apiKeysRepository.revoke(projectId, id);
+  async revoke(projectId: string, id: string): Promise<void> {
+    const revoked = await this.apiKeysRepository.revoke(projectId, id);
+    if (!revoked) {
+      throw new NotFoundException('API key not found');
+    }
   }
 
   private hash(key: string): string {

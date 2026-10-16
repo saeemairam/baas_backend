@@ -49,10 +49,11 @@ export class ApiKeysRepository {
     return rows[0] ?? null;
   }
 
-  async revoke(projectId: string, id: string): Promise<void> {
-    await this.db.query(
+  async revoke(projectId: string, id: string): Promise<boolean> {
+    const result = await this.db.query<{ affectedRows: number }>(
       'UPDATE api_keys SET revoked_at = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ? AND revoked_at IS NULL',
       [projectId, id],
     );
+    return result.affectedRows > 0;
   }
 }
