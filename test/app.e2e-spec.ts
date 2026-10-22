@@ -1,29 +1,53 @@
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
+import { AllExceptionsFilter } from './../src/common/filters/all_exception.filter.js';
+import { ResponseInterceptor } from './../src/common/interceptors/response.interceptor.js';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe('Auth (e2e)', () => {
+  let app: INestApplication;
 
-  beforeEach(async () => {
+  // Random valid Indian mobile number so reruns never hit "phone already exists"
+  const phone = `9${Math.floor(Math.random() * 1e9)
+    .toString()
+    .padStart(9, '0')}`;
+
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      }),
+    );
+    app.useGlobalFilters(new AllExceptionsFilter());
+    app.useGlobalInterceptors(new ResponseInterceptor());
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(async () => {
+    await app.close();
   });
 
-  afterEach(async () => {
-    await app.close();
+  it('POST /auth/register creates a user', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        phone,
+        password: 'StrongPassword123!',
+        firstName: 'E2E',
+        lastName: 'Tester',
+      })
+      .expect(201);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('User registered successfully');
   });
 });
