@@ -12,6 +12,7 @@ describe('Auth (e2e)', () => {
   const phone = `9${Math.floor(Math.random() * 1e9)
     .toString()
     .padStart(9, '0')}`;
+  const password = 'StrongPassword123!';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -41,7 +42,7 @@ describe('Auth (e2e)', () => {
       .post('/auth/register')
       .send({
         phone,
-        password: 'StrongPassword123!',
+        password,
         firstName: 'E2E',
         lastName: 'Tester',
       })
@@ -49,5 +50,16 @@ describe('Auth (e2e)', () => {
 
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('User registered successfully');
+  });
+
+  it('POST /auth/login logs in the registered user', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ phone, password })
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('Login successful');
+    expect(res.body.data).toBeDefined();
   });
 });
