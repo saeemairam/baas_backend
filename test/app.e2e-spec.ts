@@ -5,14 +5,18 @@ import { AppModule } from './../src/app.module.js';
 import { AllExceptionsFilter } from './../src/common/filters/all_exception.filter.js';
 import { ResponseInterceptor } from './../src/common/interceptors/response.interceptor.js';
 
+// Random valid Indian mobile number so reruns never hit "phone already exists"
+const randomPhone = () =>
+  `9${Math.floor(Math.random() * 1e9)
+    .toString()
+    .padStart(9, '0')}`;
+
 describe('API (e2e)', () => {
   let app: INestApplication;
   let accessToken: string;
+  let projectId: string;
 
-  // Random valid Indian mobile number so reruns never hit "phone already exists"
-  const phone = `9${Math.floor(Math.random() * 1e9)
-    .toString()
-    .padStart(9, '0')}`;
+  const phone = randomPhone();
   const password = 'StrongPassword123!';
 
   beforeAll(async () => {
@@ -79,5 +83,34 @@ describe('API (e2e)', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('Project created successfully');
     expect(res.body.data.name).toBe(name);
+
+    // Saved for the cross-project access test below
+    projectId = res.body.data.id;
+  });
+
+  it("GET /projects/:id blocks another user from reading someone else's project", async () => {
+    const otherPhone = randomPhone();
+
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        phone: otherPhone,
+        password,
+        firstName: 'Other',
+        lastName: 'User',
+      })
+      .expect(201);
+
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ phone: otherPhone, password })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get(`/projects/${projectId}`)
+      .set('Authorization', `Bearer ${login.body.data.accessToken}`)
+      .expect(403);
+
+    expect(res.body.success).toBe(false);
   });
 });
