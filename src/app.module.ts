@@ -8,6 +8,7 @@ import { ProjectMembersModule } from './project-members/project-members.module.j
 import { ProjectsModule } from './projects/projects.module.js';
 import { UsersModule } from './users/users.module.js';
 import { ResourcesModule } from './resources/resources.module.js';
+import { RecordsModule } from './records/records.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ResourcesModule } from './resources/resources.module.js';
     ProjectMembersModule,
     ApiKeysModule,
     ResourcesModule,
+    RecordsModule,
   ],
   controllers: [],
   providers: [],
