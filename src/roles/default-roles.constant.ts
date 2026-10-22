@@ -21,6 +21,7 @@ export const DEFAULT_ROLES = [
       'api_keys:read',
       'api_keys:create',
       'api_keys:delete',
+      'audit_logs:read',
     ],
   },
   {
@@ -45,6 +46,7 @@ export const DEFAULT_ROLES = [
       'api_keys:read',
       'api_keys:create',
       'api_keys:delete',
+      'audit_logs:read',
     ],
   },
   {
