@@ -13,6 +13,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -35,11 +36,14 @@ export class AuthController {
     };
   }
 
+  // Stricter limit than the app default: 5 attempts per 60 seconds
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'Log in with phone and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid phone or password' })
+  @ApiResponse({ status: 429, description: 'Too many login attempts' })
   async login(@Body() dto: LoginDto) {
     return {
       message: 'Login successful',
