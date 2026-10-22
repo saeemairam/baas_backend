@@ -5,8 +5,9 @@ import { AppModule } from './../src/app.module.js';
 import { AllExceptionsFilter } from './../src/common/filters/all_exception.filter.js';
 import { ResponseInterceptor } from './../src/common/interceptors/response.interceptor.js';
 
-describe('Auth (e2e)', () => {
+describe('API (e2e)', () => {
   let app: INestApplication;
+  let accessToken: string;
 
   // Random valid Indian mobile number so reruns never hit "phone already exists"
   const phone = `9${Math.floor(Math.random() * 1e9)
@@ -61,5 +62,22 @@ describe('Auth (e2e)', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('Login successful');
     expect(res.body.data).toBeDefined();
+
+    // Saved for the tests below that need a logged-in user
+    accessToken = res.body.data.accessToken;
+  });
+
+  it('POST /projects creates a project for the logged-in user', async () => {
+    const name = `E2E Project ${Date.now()}`;
+
+    const res = await request(app.getHttpServer())
+      .post('/projects')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ name })
+      .expect(201);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('Project created successfully');
+    expect(res.body.data.name).toBe(name);
   });
 });
