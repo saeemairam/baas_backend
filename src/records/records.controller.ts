@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -14,6 +15,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { AuditLogsService } from '../audit-logs/audit-logs.service.js';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../common/guards/permissions.guard.js';
@@ -26,7 +28,10 @@ import { RecordsService } from './records.service.js';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('projects/:projectId/resources/:resourceId/records')
 export class RecordsController {
-  constructor(private readonly recordsService: RecordsService) {}
+  constructor(
+    private readonly recordsService: RecordsService,
+    private readonly auditLogsService: AuditLogsService,
+  ) {}
 
   @Post()
   @RequirePermissions('records:create')
@@ -35,14 +40,27 @@ export class RecordsController {
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Resource not found' })
   async create(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Param('resourceId') resourceId: string,
     @Body() dto: CreateRecordDto,
   ) {
-    return {
-      message: 'Record created successfully',
-      data: await this.recordsService.create(projectId, resourceId, dto.data),
-    };
+    const record = await this.recordsService.create(
+      projectId,
+      resourceId,
+      dto.data,
+    );
+
+    await this.auditLogsService.log({
+      projectId,
+      userId: req.user.sub,
+      action: 'record.created',
+      entityType: 'record',
+      entityId: record.id,
+      details: { resourceId },
+    });
+
+    return { message: 'Record created successfully', data: record };
   }
 
   @Get()
@@ -85,12 +103,23 @@ export class RecordsController {
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Record not found' })
   async update(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Param('resourceId') resourceId: string,
     @Param('id') id: string,
     @Body() dto: UpdateRecordDto,
   ) {
     await this.recordsService.update(projectId, resourceId, id, dto.data);
+
+    await this.auditLogsService.log({
+      projectId,
+      userId: req.user.sub,
+      action: 'record.updated',
+      entityType: 'record',
+      entityId: id,
+      details: { resourceId },
+    });
+
     return { message: 'Record updated successfully', data: null };
   }
 
@@ -101,11 +130,22 @@ export class RecordsController {
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Record not found' })
   async remove(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Param('resourceId') resourceId: string,
     @Param('id') id: string,
   ) {
     await this.recordsService.delete(projectId, resourceId, id);
+
+    await this.auditLogsService.log({
+      projectId,
+      userId: req.user.sub,
+      action: 'record.deleted',
+      entityType: 'record',
+      entityId: id,
+      details: { resourceId },
+    });
+
     return { message: 'Record deleted successfully', data: null };
   }
 }
