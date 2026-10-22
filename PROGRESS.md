@@ -1,5 +1,37 @@
 # BaaS Backend - Progress Log
 
+## Step 1: Project Setup (complete)
+
+### What was built
+- NestJS project (TypeScript, ESM) with Swagger at `/api/docs`
+- MySQL database `baas_db` with a `mysql2` connection pool (native SQL, no ORM)
+- `DatabaseService` with `query<T>(sql, params)` for parameterized queries
+- Global response interceptor and exception filter: success `{ success, message, data }`, errors `{ success: false, error: { code, message } }`
+- Global validation pipe returning 422 on validation errors
+- Decision: the global `/api/v1` prefix from the PDF was skipped, so routes have no prefix
+
+## Step 2: Users and Registration (complete)
+
+### What was built
+- Users module: entity, DTO, repository, service
+- `POST /auth/register` (phone, password, first name, last name)
+- Duplicate phone returns 409
+
+## Step 3: Authentication (complete)
+
+### What was built
+- `POST /auth/login` returns an access token and a refresh token (JWT)
+- `POST /auth/refresh` issues a new access token from a refresh token
+- `POST /auth/logout` (stub: does not revoke tokens server-side, the client discards its tokens)
+- `GET /auth/me` returns the current user, protected by `JwtAuthGuard`
+
+## Step 4: Projects and Members (complete)
+
+### What was built
+- Projects CRUD: `POST/GET/PATCH/DELETE /projects` with ownership checks (403 for projects you do not own, 404 if not found)
+- Unique project slug (409 on duplicates)
+- Project members endpoints
+
 ## Step 5: Roles and Permissions (complete)
 
 **Date completed:** 2026-10-09
@@ -23,8 +55,6 @@
   - Owner can remove a member (200)
   - Removing the project owner is blocked (403)
 
-### Next
-
 ## Step 6: API Keys (complete)
 
 **Date completed:** 2026-10-09
@@ -47,9 +77,6 @@
   - Viewer cannot create a key (403)
   - Viewer cannot list keys (403)
 
-### Next
-- Step 7: Resources and records
-
 ## Step 7: Resources and Records (complete)
 
 ### What was built
@@ -57,7 +84,7 @@
 - JSON records endpoints: `/projects/:projectId/resources/:resourceId/records`
 - Pagination, filtering and sorting on records
 
-## Step 8: Audit Logs (complete, one check pending)
+## Step 8: Audit Logs (complete)
 
 ### What was built
 - `audit_logs` table (migration 014)
@@ -71,10 +98,9 @@
 
 ### Testing
 - AuditLogsService unit tests added and passing
-- `record.created` tested in Swagger
-- Pending: `record.updated` and `record.deleted` entries are not yet tested in Swagger
+- `record.created`, `record.updated` and `record.deleted` entries all confirmed in Swagger through `GET /projects/:projectId/audit-logs` (2026-10-23)
 
-## Rate Limiting (complete)
+## Step 9: Rate Limiting (complete)
 
 ### What was built
 - `@nestjs/throttler` ^6.7.1
@@ -114,6 +140,5 @@
 - 60 unit tests across 13 files passing (`npm test`)
 
 ### Next
-- Optional: test `record.updated` and `record.deleted` audit entries in Swagger
 - Optional: clean up the test users that each e2e run adds to `baas_db`
 - Optional: global `/api/v1` prefix from the project PDF (changes every route and test)
