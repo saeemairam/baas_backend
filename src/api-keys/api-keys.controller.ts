@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -13,6 +14,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { AuditLogsService } from '../audit-logs/audit-logs.service.js';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../common/guards/permissions.guard.js';
@@ -24,7 +26,10 @@ import { CreateApiKeyDto } from './dto/create-api-key.dto.js';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('projects/:projectId/api-keys')
 export class ApiKeysController {
-  constructor(private readonly apiKeysService: ApiKeysService) {}
+  constructor(
+    private readonly apiKeysService: ApiKeysService,
+    private readonly auditLogsService: AuditLogsService,
+  ) {}
 
   @Post()
   @RequirePermissions('api_keys:create')
@@ -32,12 +37,25 @@ export class ApiKeysController {
   @ApiResponse({ status: 201, description: 'API key created. Shown once.' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
   async create(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Body() dto: CreateApiKeyDto,
   ) {
+    const apiKey = await this.apiKeysService.create(projectId, dto.name);
+
+    // Never log the key itself, only its name and prefix
+    await this.auditLogsService.log({
+      projectId,
+      userId: req.user.sub,
+      action: 'api_key.created',
+      entityType: 'api_key',
+      entityId: apiKey.id,
+      details: { name: apiKey.name, keyPrefix: apiKey.keyPrefix },
+    });
+
     return {
       message: 'API key created successfully',
-      data: await this.apiKeysService.create(projectId, dto.name),
+      data: apiKey,
     };
   }
 
@@ -58,8 +76,22 @@ export class ApiKeysController {
   @ApiOperation({ summary: 'Revoke an API key' })
   @ApiResponse({ status: 200, description: 'API key revoked successfully' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
-  async revoke(@Param('projectId') projectId: string, @Param('id') id: string) {
+  @ApiResponse({ status: 404, description: 'API key not found' })
+  async revoke(
+    @Req() req: any,
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+  ) {
     await this.apiKeysService.revoke(projectId, id);
+
+    await this.auditLogsService.log({
+      projectId,
+      userId: req.user.sub,
+      action: 'api_key.revoked',
+      entityType: 'api_key',
+      entityId: id,
+    });
+
     return { message: 'API key revoked successfully', data: null };
   }
 }
