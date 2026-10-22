@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -13,6 +14,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { AuditLogsService } from '../audit-logs/audit-logs.service.js';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../common/guards/permissions.guard.js';
@@ -24,7 +26,10 @@ import { ResourcesService } from './resources.service.js';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('projects/:projectId/resources')
 export class ResourcesController {
-  constructor(private readonly resourcesService: ResourcesService) {}
+  constructor(
+    private readonly resourcesService: ResourcesService,
+    private readonly auditLogsService: AuditLogsService,
+  ) {}
 
   @Post()
   @RequirePermissions('resources:create')
@@ -33,13 +38,22 @@ export class ResourcesController {
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 409, description: 'Resource name already exists' })
   async create(
+    @Req() req: any,
     @Param('projectId') projectId: string,
     @Body() dto: CreateResourceDto,
   ) {
-    return {
-      message: 'Resource created successfully',
-      data: await this.resourcesService.create(projectId, dto.name),
-    };
+    const resource = await this.resourcesService.create(projectId, dto.name);
+
+    await this.auditLogsService.log({
+      projectId,
+      userId: req.user.sub,
+      action: 'resource.created',
+      entityType: 'resource',
+      entityId: resource.id,
+      details: { name: resource.name },
+    });
+
+    return { message: 'Resource created successfully', data: resource };
   }
 
   @Get()
@@ -60,8 +74,21 @@ export class ResourcesController {
   @ApiResponse({ status: 200, description: 'Resource deleted successfully' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Resource not found' })
-  async remove(@Param('projectId') projectId: string, @Param('id') id: string) {
+  async remove(
+    @Req() req: any,
+    @Param('projectId') projectId: string,
+    @Param('id') id: string,
+  ) {
     await this.resourcesService.delete(projectId, id);
+
+    await this.auditLogsService.log({
+      projectId,
+      userId: req.user.sub,
+      action: 'resource.deleted',
+      entityType: 'resource',
+      entityId: id,
+    });
+
     return { message: 'Resource deleted successfully', data: null };
   }
 }
