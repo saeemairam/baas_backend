@@ -83,6 +83,13 @@
 - Resources endpoints: `/projects/:projectId/resources`
 - JSON records endpoints: `/projects/:projectId/resources/:resourceId/records`
 - Pagination, filtering and sorting on records
+- `resources` table (migration 011) and `records` table with a JSON `data` column (migration 012)
+- `resources:*` permissions added and assigned to the default roles (migration 013)
+- Every query includes the project ID, so one project cannot read another project's data
+
+### Testing
+- Unit tests added for the resources and records services
+- Swagger: created a resource, listed resources (200), created a record (201), and confirmed it appears in the records list (2026-10-23)
 
 ## Step 8: Audit Logs (complete)
 
