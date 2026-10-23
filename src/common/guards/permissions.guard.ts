@@ -26,6 +26,12 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
+
+    // Version 1: a valid project API key may use the records routes of its own project
+    if (request.apiKey) {
+      return true;
+    }
+
     const userId: string | undefined = request.user?.sub;
     const projectId: string | undefined =
       request.params?.projectId ?? request.params?.id;

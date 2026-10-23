@@ -13,11 +13,12 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuditLogsService } from '../audit-logs/audit-logs.service.js';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator.js';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
+import { ApiKeyOrJwtGuard } from '../common/guards/api-key-or-jwt.guard.js';
 import { PermissionsGuard } from '../common/guards/permissions.guard.js';
 import { CreateRecordDto } from './dto/create-record.dto.js';
 import { UpdateRecordDto } from './dto/update-record.dto.js';
@@ -25,7 +26,8 @@ import { RecordsService } from './records.service.js';
 
 @ApiTags('Records')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@ApiSecurity('api-key')
+@UseGuards(ApiKeyOrJwtGuard, PermissionsGuard)
 @Controller('projects/:projectId/resources/:resourceId/records')
 export class RecordsController {
   constructor(
@@ -37,6 +39,7 @@ export class RecordsController {
   @RequirePermissions('records:create')
   @ApiOperation({ summary: 'Create a record in a resource' })
   @ApiResponse({ status: 201, description: 'Record created successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid credentials' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Resource not found' })
   async create(
@@ -53,7 +56,7 @@ export class RecordsController {
 
     await this.auditLogsService.log({
       projectId,
-      userId: req.user.sub,
+      userId: req.user?.sub ?? null,
       action: 'record.created',
       entityType: 'record',
       entityId: record.id,
@@ -67,6 +70,7 @@ export class RecordsController {
   @RequirePermissions('records:read')
   @ApiOperation({ summary: 'List records of a resource' })
   @ApiResponse({ status: 200, description: 'Records retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid credentials' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Resource not found' })
   async list(
@@ -83,6 +87,7 @@ export class RecordsController {
   @RequirePermissions('records:read')
   @ApiOperation({ summary: 'Get one record' })
   @ApiResponse({ status: 200, description: 'Record retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid credentials' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Record not found' })
   async getOne(
@@ -100,6 +105,7 @@ export class RecordsController {
   @RequirePermissions('records:update')
   @ApiOperation({ summary: 'Replace the data of a record' })
   @ApiResponse({ status: 200, description: 'Record updated successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid credentials' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Record not found' })
   async update(
@@ -113,7 +119,7 @@ export class RecordsController {
 
     await this.auditLogsService.log({
       projectId,
-      userId: req.user.sub,
+      userId: req.user?.sub ?? null,
       action: 'record.updated',
       entityType: 'record',
       entityId: id,
@@ -127,6 +133,7 @@ export class RecordsController {
   @RequirePermissions('records:delete')
   @ApiOperation({ summary: 'Delete a record' })
   @ApiResponse({ status: 200, description: 'Record deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid credentials' })
   @ApiResponse({ status: 403, description: 'Missing permission' })
   @ApiResponse({ status: 404, description: 'Record not found' })
   async remove(
@@ -139,7 +146,7 @@ export class RecordsController {
 
     await this.auditLogsService.log({
       projectId,
-      userId: req.user.sub,
+      userId: req.user?.sub ?? null,
       action: 'record.deleted',
       entityType: 'record',
       entityId: id,

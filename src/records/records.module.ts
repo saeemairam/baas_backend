@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ApiKeysModule } from '../api-keys/api-keys.module.js';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module.js';
 import { DatabaseModule } from '../database/database.module.js';
 import { RolesModule } from '../roles/roles.module.js';
@@ -13,6 +14,7 @@ import { RecordsService } from './records.service.js';
     JwtModule.register({}),
     RolesModule,
     AuditLogsModule,
+    ApiKeysModule,
   ],
   controllers: [RecordsController],
   providers: [RecordsService, RecordsRepository],

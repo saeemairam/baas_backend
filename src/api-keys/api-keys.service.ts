@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { ApiKeysRepository } from './api-keys.repository.js';
 import type { ApiKey } from './entities/api-key.entity.js';
@@ -28,6 +32,17 @@ export class ApiKeysService {
 
   findAll(projectId: string): Promise<ApiKey[]> {
     return this.apiKeysRepository.findAllByProject(projectId);
+  }
+
+  // Checks a key sent by an external app: it must exist, not be revoked,
+  // and belong to the project in the URL (tenant isolation).
+  async authenticate(key: string, projectId: string): Promise<ApiKey> {
+    const apiKey = await this.apiKeysRepository.findByHash(this.hash(key));
+    if (!apiKey || apiKey.projectId !== projectId) {
+      throw new UnauthorizedException('Invalid API key');
+    }
+    await this.apiKeysRepository.touchLastUsed(apiKey.id);
+    return apiKey;
   }
 
   async revoke(projectId: string, id: string): Promise<void> {

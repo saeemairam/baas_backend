@@ -8,6 +8,7 @@ const SELECT_COLUMNS = `
   name,
   key_prefix AS keyPrefix,
   created_at AS createdAt,
+  last_used_at AS lastUsedAt,
   revoked_at AS revokedAt
 `;
 
@@ -47,6 +48,13 @@ export class ApiKeysRepository {
       [keyHash],
     );
     return rows[0] ?? null;
+  }
+
+  async touchLastUsed(id: string): Promise<void> {
+    await this.db.query(
+      'UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [id],
+    );
   }
 
   async revoke(projectId: string, id: string): Promise<boolean> {
