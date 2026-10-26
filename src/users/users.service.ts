@@ -72,4 +72,9 @@ export class UsersService {
       lastName: user.last_name,
     };
   }
+
+  async setPassword(id: string, newPassword: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.usersRepository.updatePassword(id, passwordHash);
+  }
 }
