@@ -16,14 +16,20 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { AuthService } from './auth.service.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshDto } from './dto/refresh.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
+import { PasswordResetService } from './password-reset.service.js';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private passwordResetService: PasswordResetService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new platform user' })
@@ -61,6 +67,42 @@ export class AuthController {
       message: 'Access token refreshed',
       data: await this.authService.refresh(dto),
     };
+  }
+
+  // 3 requests per 60 seconds, so nobody can flood a phone with codes
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Post('forgot-password')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Request a password reset code',
+    description:
+      'Always answers the same way, whether or not the phone is registered. In development the code is printed in the server terminal.',
+  })
+  @ApiResponse({ status: 200, description: 'Reset code requested' })
+  @ApiResponse({ status: 429, description: 'Too many requests' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.passwordResetService.requestReset(dto.phone);
+    return {
+      message: 'If the phone is registered, a reset code has been sent',
+      data: null,
+    };
+  }
+
+  // 5 attempts per 60 seconds
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('reset-password')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Set a new password using the reset code' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired code' })
+  @ApiResponse({ status: 429, description: 'Too many attempts' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.passwordResetService.resetPassword(
+      dto.phone,
+      dto.code,
+      dto.newPassword,
+    );
+    return { message: 'Password reset successfully', data: null };
   }
 
   @Post('logout')
