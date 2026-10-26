@@ -35,4 +35,11 @@ export class UsersRepository {
       [user.id, user.phone, user.passwordHash, user.firstName, user.lastName],
     );
   }
+
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    await this.db.query('UPDATE users SET password_hash = ? WHERE id = ?', [
+      passwordHash,
+      id,
+    ]);
+  }
 }
