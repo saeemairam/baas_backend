@@ -43,7 +43,6 @@ export class ApiKeysController {
   ) {
     const apiKey = await this.apiKeysService.create(projectId, dto.name);
 
-    // Never log the key itself, only its name and prefix
     await this.auditLogsService.log({
       projectId,
       userId: req.user.sub,
@@ -53,10 +52,7 @@ export class ApiKeysController {
       details: { name: apiKey.name, keyPrefix: apiKey.keyPrefix },
     });
 
-    return {
-      message: 'API key created successfully',
-      data: apiKey,
-    };
+    return { message: 'API key created successfully', data: apiKey };
   }
 
   @Get()
