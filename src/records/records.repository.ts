@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service.js';
+import { ProjectDatabasesService } from '../project-databases/project-databases.service.js';
 import type { ResourceRecord } from './entities/record.entity.js';
 
 const SELECT_COLUMNS = `
@@ -12,25 +12,30 @@ const SELECT_COLUMNS = `
 
 @Injectable()
 export class RecordsRepository {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(private readonly projectDb: ProjectDatabasesService) {}
 
   async resourceExists(
     projectId: string,
     resourceId: string,
   ): Promise<boolean> {
-    const rows = await this.db.query<{ id: string }[]>(
+    const rows = await this.projectDb.query<{ id: string }[]>(
+      projectId,
       'SELECT id FROM resources WHERE id = ? AND project_id = ? LIMIT 1',
       [resourceId, projectId],
     );
     return rows.length > 0;
   }
 
-  async create(record: {
-    id: string;
-    resourceId: string;
-    data: Record<string, unknown>;
-  }): Promise<void> {
-    await this.db.query(
+  async create(
+    projectId: string,
+    record: {
+      id: string;
+      resourceId: string;
+      data: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    await this.projectDb.query(
+      projectId,
       'INSERT INTO records (id, resource_id, data) VALUES (?, ?, ?)',
       [record.id, record.resourceId, JSON.stringify(record.data)],
     );
@@ -40,7 +45,8 @@ export class RecordsRepository {
     projectId: string,
     resourceId: string,
   ): Promise<ResourceRecord[]> {
-    return this.db.query<ResourceRecord[]>(
+    return this.projectDb.query<ResourceRecord[]>(
+      projectId,
       `SELECT ${SELECT_COLUMNS}
        FROM records rec
        JOIN resources res ON res.id = rec.resource_id
@@ -55,7 +61,8 @@ export class RecordsRepository {
     resourceId: string,
     id: string,
   ): Promise<ResourceRecord | null> {
-    const rows = await this.db.query<ResourceRecord[]>(
+    const rows = await this.projectDb.query<ResourceRecord[]>(
+      projectId,
       `SELECT ${SELECT_COLUMNS}
        FROM records rec
        JOIN resources res ON res.id = rec.resource_id
@@ -72,7 +79,8 @@ export class RecordsRepository {
     id: string,
     data: Record<string, unknown>,
   ): Promise<boolean> {
-    const result = await this.db.query<{ affectedRows: number }>(
+    const result = await this.projectDb.query<{ affectedRows: number }>(
+      projectId,
       `UPDATE records rec
        JOIN resources res ON res.id = rec.resource_id
        SET rec.data = ?
@@ -87,7 +95,8 @@ export class RecordsRepository {
     resourceId: string,
     id: string,
   ): Promise<boolean> {
-    const result = await this.db.query<{ affectedRows: number }>(
+    const result = await this.projectDb.query<{ affectedRows: number }>(
+      projectId,
       `DELETE rec FROM records rec
        JOIN resources res ON res.id = rec.resource_id
        WHERE res.project_id = ? AND rec.resource_id = ? AND rec.id = ?`,

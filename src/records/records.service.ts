@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { RecordsRepository } from './records.repository.js';
 import type { ResourceRecord } from './entities/record.entity.js';
+import { RecordsRepository } from './records.repository.js';
 
 @Injectable()
 export class RecordsService {
@@ -19,7 +19,7 @@ export class RecordsService {
     await this.ensureResourceExists(projectId, resourceId);
 
     const id = randomUUID();
-    await this.recordsRepository.create({ id, resourceId, data });
+    await this.recordsRepository.create(projectId, { id, resourceId, data });
 
     return { id, resourceId, data };
   }
