@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module.js';
 import { DatabaseModule } from '../database/database.module.js';
+import { ProjectDatabasesModule } from '../project-databases/project-databases.module.js';
 import { RolesModule } from '../roles/roles.module.js';
 import { ResourcesController } from './resources.controller.js';
 import { ResourcesRepository } from './resources.repository.js';
@@ -13,6 +14,7 @@ import { ResourcesService } from './resources.service.js';
     JwtModule.register({}),
     RolesModule,
     AuditLogsModule,
+    ProjectDatabasesModule,
   ],
   controllers: [ResourcesController],
   providers: [ResourcesService, ResourcesRepository],
