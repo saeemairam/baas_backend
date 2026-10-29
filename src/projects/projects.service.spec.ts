@@ -4,17 +4,24 @@ import { ProjectsService } from './projects.service.js';
 
 describe('ProjectsService', () => {
   let service: ProjectsService;
+
   let fakeRepository: {
     findBySlug: ReturnType<typeof vi.fn>;
     findById: ReturnType<typeof vi.fn>;
     findAllByOwner: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
   };
+
   let fakeRolesService: {
     createDefaultRoles: ReturnType<typeof vi.fn>;
   };
+
   let fakeMembersRepository: {
     create: ReturnType<typeof vi.fn>;
+  };
+
+  let fakeProjectDatabasesService: {
+    provision: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -24,16 +31,24 @@ describe('ProjectsService', () => {
       findAllByOwner: vi.fn(),
       create: vi.fn(),
     };
+
     fakeRolesService = {
       createDefaultRoles: vi.fn(),
     };
+
     fakeMembersRepository = {
       create: vi.fn(),
     };
+
+    fakeProjectDatabasesService = {
+      provision: vi.fn().mockResolvedValue(undefined),
+    };
+
     service = new ProjectsService(
       fakeRepository as any,
       fakeRolesService as any,
       fakeMembersRepository as any,
+      fakeProjectDatabasesService as any,
     );
   });
 
@@ -41,10 +56,13 @@ describe('ProjectsService', () => {
     it('creates a project with an auto-generated slug when none is given', async () => {
       fakeRepository.findBySlug.mockResolvedValue(null);
       fakeRepository.create.mockResolvedValue(undefined);
+
       fakeRolesService.createDefaultRoles.mockResolvedValue({
         owner: 'owner-role-id',
       });
+
       fakeMembersRepository.create.mockResolvedValue(undefined);
+
       fakeRepository.findById.mockResolvedValue({
         id: 'some-id',
         name: 'My First Project',
@@ -60,6 +78,7 @@ describe('ProjectsService', () => {
       expect(fakeRepository.findBySlug).toHaveBeenCalledWith(
         'my-first-project',
       );
+
       expect(fakeRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'My First Project',
@@ -67,17 +86,26 @@ describe('ProjectsService', () => {
           ownerId: 'owner-1',
         }),
       );
+
+      expect(fakeProjectDatabasesService.provision).toHaveBeenCalledWith(
+        expect.any(String),
+      );
+
       expect(fakeRolesService.createDefaultRoles).toHaveBeenCalledWith(
         expect.any(String),
       );
+
       expect(fakeMembersRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'owner-1',
           roleId: 'owner-role-id',
         }),
       );
+
       expect(result).toEqual(
-        expect.objectContaining({ slug: 'my-first-project' }),
+        expect.objectContaining({
+          slug: 'my-first-project',
+        }),
       );
     });
 
@@ -88,10 +116,13 @@ describe('ProjectsService', () => {
       });
 
       await expect(
-        service.create('owner-1', { name: 'My First Project' }),
+        service.create('owner-1', {
+          name: 'My First Project',
+        }),
       ).rejects.toThrow(ConflictException);
 
       expect(fakeRepository.create).not.toHaveBeenCalled();
+      expect(fakeProjectDatabasesService.provision).not.toHaveBeenCalled();
       expect(fakeRolesService.createDefaultRoles).not.toHaveBeenCalled();
       expect(fakeMembersRepository.create).not.toHaveBeenCalled();
     });
@@ -99,10 +130,13 @@ describe('ProjectsService', () => {
     it('uses the explicitly given slug instead of generating one', async () => {
       fakeRepository.findBySlug.mockResolvedValue(null);
       fakeRepository.create.mockResolvedValue(undefined);
+
       fakeRolesService.createDefaultRoles.mockResolvedValue({
         owner: 'owner-role-id',
       });
+
       fakeMembersRepository.create.mockResolvedValue(undefined);
+
       fakeRepository.findById.mockResolvedValue({
         id: 'some-id',
         slug: 'custom-slug',
@@ -114,8 +148,15 @@ describe('ProjectsService', () => {
       });
 
       expect(fakeRepository.findBySlug).toHaveBeenCalledWith('custom-slug');
+
       expect(fakeRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ slug: 'custom-slug' }),
+        expect.objectContaining({
+          slug: 'custom-slug',
+        }),
+      );
+
+      expect(fakeProjectDatabasesService.provision).toHaveBeenCalledWith(
+        expect.any(String),
       );
     });
   });
@@ -123,6 +164,7 @@ describe('ProjectsService', () => {
   describe('findAllForOwner', () => {
     it('returns the projects belonging to the given owner', async () => {
       const projects = [{ id: '1', ownerId: 'owner-1' }];
+
       fakeRepository.findAllByOwner.mockResolvedValue(projects);
 
       const result = await service.findAllForOwner('owner-1');

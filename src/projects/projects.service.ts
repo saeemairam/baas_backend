@@ -96,6 +96,8 @@ export class ProjectsService {
 
   async delete(id: string, userId: string): Promise<void> {
     await this.findOneForOwner(id, userId);
+    // Drop the project's own database first (old projects are skipped)
+    await this.projectDatabasesService.drop(id);
     await this.projectsRepository.delete(id);
   }
 

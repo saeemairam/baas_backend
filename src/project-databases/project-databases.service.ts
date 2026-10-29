@@ -94,6 +94,29 @@ export class ProjectDatabasesService implements OnModuleDestroy {
     return rows as T;
   }
 
+  /**
+   * Drops the project's own database. Old projects (null name) are skipped.
+   * Call this before the project row is deleted.
+   */
+  async drop(projectId: string): Promise<void> {
+    const name = await this.getDatabaseName(projectId);
+    if (name === null) {
+      return;
+    }
+
+    this.assertValidDatabaseName(name);
+
+    const pool = this.pools.get(name);
+    if (pool) {
+      await pool.end();
+      this.pools.delete(name);
+    }
+
+    await this.databaseService.query('DROP DATABASE IF EXISTS `' + name + '`');
+
+    this.databaseNames.delete(projectId);
+  }
+
   /** Finds the project's database name (null = shared baas_db), cached in memory. */
   private async getDatabaseName(projectId: string): Promise<string | null> {
     if (this.databaseNames.has(projectId)) {

@@ -23,6 +23,7 @@ describe('RecordsService', () => {
       update: vi.fn(),
       delete: vi.fn(),
     };
+
     service = new RecordsService(repository as unknown as RecordsRepository);
   });
 
@@ -35,7 +36,8 @@ describe('RecordsService', () => {
 
       expect(result.resourceId).toBe('resource-1');
       expect(result.data).toBe(data);
-      expect(repository.create).toHaveBeenCalledWith({
+
+      expect(repository.create).toHaveBeenCalledWith('project-1', {
         id: result.id,
         resourceId: 'resource-1',
         data,
@@ -46,8 +48,11 @@ describe('RecordsService', () => {
       repository.resourceExists.mockResolvedValue(false);
 
       await expect(
-        service.create('project-1', 'missing', { title: 'Phone' }),
+        service.create('project-1', 'missing', {
+          title: 'Phone',
+        }),
       ).rejects.toThrow(NotFoundException);
+
       expect(repository.create).not.toHaveBeenCalled();
     });
   });
@@ -78,7 +83,10 @@ describe('RecordsService', () => {
 
   describe('findOne', () => {
     it('returns the record when found', async () => {
-      const record = { id: 'rec-1', resourceId: 'resource-1' };
+      const record = {
+        id: 'rec-1',
+        resourceId: 'resource-1',
+      };
       repository.findOne.mockResolvedValue(record);
 
       const result = await service.findOne('project-1', 'resource-1', 'rec-1');

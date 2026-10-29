@@ -142,6 +142,55 @@
   - An active key reads records (200)
   - After the key was revoked, the same request returns 401 "Invalid API key"
 
+## Forgot Password with OTP (complete)
+
+**Date completed:** 2026-10-27
+
+### What was built
+- `password_reset_codes` table (migration 017): stores a SHA-256 hash of the code, expiry, attempt count and used time
+- `POST /auth/forgot-password`: always answers the same way, so it does not reveal which phones are registered; limited to 3 requests per 60 seconds
+- `POST /auth/reset-password`: checks the code and sets the new password (bcrypt, same as registration); limited to 5 attempts per 60 seconds
+- Rules: a 6-digit code, valid for 5 minutes, usable once, cancelled after 3 wrong attempts, and a new request cancels older codes
+- `UsersService.setPassword` and `UsersRepository.updatePassword` added
+- Development mode: the code is printed in the server terminal and never printed when `NODE_ENV` is `production`
+
+### Testing
+- 66 unit tests across 14 files passing at the time of completion, including 6 for `PasswordResetService`
+- Swagger tests passed:
+  - Request a code (200) and see it in the terminal
+  - Reset with the code (200)
+  - Login with the new password (200)
+  - Login with the old password (401)
+  - Reuse the same code (400)
+
+### Next
+- No SMS provider is connected yet, so the code only appears in the server terminal; a provider such as MSG91 or Twilio would replace the terminal log in `PasswordResetService.requestReset`
+
+## Per-Project Databases (complete)
+
+**Date completed:** 2026-10-29
+
+### What was built
+- Migration 018 adds a nullable `database_name` column to `projects`
+- Each newly created project gets its own MySQL database named `proj_<project UUID without dashes>`
+- `ProjectDatabasesModule` and `ProjectDatabasesService` provision the project database and create its `resources` and `records` tables
+- The generated database name is validated before use
+- Resources and records repositories route project-specific queries to the corresponding project database
+- Existing projects with `database_name = NULL` continue using the legacy `baas_db` database
+- Project database connection pools are reused and closed when the service is destroyed
+- Project creation provisions its database; if provisioning fails, the project creation is rolled back
+- Project database cleanup is handled when a project is deleted
+- Migration 019 changes the `project_members` foreign key to `ON DELETE CASCADE` so project deletion can remove its members
+
+### Testing
+- Project database creation and tables confirmed in MySQL Workbench
+- Resource data confirmed in the correct project database rather than `baas_db`
+- Project deletion returned 200 in Swagger
+- Project database service tests pass, including database-name validation, provisioning, legacy-project fallback, pool reuse, missing-project handling and cleanup
+- Projects, resources and records service tests pass
+- Latest unit test run: **79 tests passed across 15 test files** (`npx vitest run`)
+- Latest end-to-end test run: **9 tests passed across 2 test files** (`npm run test:e2e`)
+
 ## Integration (e2e) Tests (complete)
 
 **Date completed:** 2026-10-23 (API key tests added 2026-10-26)
@@ -163,8 +212,13 @@
   - List records with the `x-api-key` header (200)
   - A request with no credentials is rejected (401)
   - After the key is revoked, the same key is rejected (401)
-- 60 unit tests across 13 files passing (`npm test`)
+
+### Latest test status
+- **79 unit tests passed across 15 files** (`npx vitest run`)
+- **9 end-to-end tests passed across 2 files** (`npm run test:e2e`)
+- Total: **88 tests passed**
 
 ### Next
 - Optional: clean up the test users that each e2e run adds to `baas_db`
-- Optional: global `/api/v1` prefix from the project PDF (changes every route and test)
+- Optional: add the global `/api/v1` prefix from the project PDF (changes every route and test)
+- Before pushing: confirm the end-to-end coverage includes creating a record in a newly provisioned project database and verify that old projects with `database_name = NULL` still use `baas_db`
