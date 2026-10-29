@@ -2,9 +2,11 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { ProjectDatabasesService } from '../project-databases/project-databases.service.js';
 import { ProjectMembersRepository } from '../project-members/project-members.repository.js';
 import { RolesService } from '../roles/roles.service.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
@@ -17,6 +19,7 @@ export class ProjectsService {
     private readonly projectsRepository: ProjectsRepository,
     private readonly rolesService: RolesService,
     private readonly projectMembersRepository: ProjectMembersRepository,
+    private readonly projectDatabasesService: ProjectDatabasesService,
   ) {}
 
   async create(ownerId: string, dto: CreateProjectDto) {
@@ -34,6 +37,16 @@ export class ProjectsService {
       slug,
       ownerId,
     });
+
+    try {
+      await this.projectDatabasesService.provision(id);
+    } catch {
+      // Roll back so we never keep a project without its database
+      await this.projectsRepository.delete(id);
+      throw new InternalServerErrorException(
+        'Could not create the project database',
+      );
+    }
 
     const roleIds = await this.rolesService.createDefaultRoles(id);
 

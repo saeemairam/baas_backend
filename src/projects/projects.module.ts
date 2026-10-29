@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { DatabaseModule } from '../database/database.module.js';
+import { ProjectDatabasesModule } from '../project-databases/project-databases.module.js';
 import { ProjectMembersRepository } from '../project-members/project-members.repository.js';
 import { RolesModule } from '../roles/roles.module.js';
 import { ProjectsController } from './projects.controller.js';
@@ -8,7 +9,12 @@ import { ProjectsRepository } from './projects.repository.js';
 import { ProjectsService } from './projects.service.js';
 
 @Module({
-  imports: [DatabaseModule, JwtModule.register({}), RolesModule],
+  imports: [
+    DatabaseModule,
+    JwtModule.register({}),
+    RolesModule,
+    ProjectDatabasesModule,
+  ],
   controllers: [ProjectsController],
   providers: [ProjectsService, ProjectsRepository, ProjectMembersRepository],
   exports: [ProjectsService],
